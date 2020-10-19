@@ -1,26 +1,25 @@
 package com.example.android.treasureHunt
 
-import android.Manifest
 import android.annotation.SuppressLint
-import android.annotation.TargetApi
 import android.app.Activity
+import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.IntentSender
-import android.content.pm.PackageManager
 import android.util.Log
 import android.widget.Toast
-import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import androidx.work.Worker
+import androidx.work.WorkerParameters
 import com.google.android.gms.common.api.ResolvableApiException
 import com.google.android.gms.location.*
 
-object GeofenceManager {
 
-    private const val TAG = "GeofenceManager"
+private const val TAG = "GeofenceManager"
 
-    private val runningQOrLater =
-        android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q
+class GeofenceManager(private val context: Context, params: WorkerParameters) :
+    Worker(context, params) {
 
 
     private lateinit var geofencePendingIntent: PendingIntent
@@ -31,17 +30,23 @@ object GeofenceManager {
         geofencePendingIntent = getGeofencePendingIntent(context)
     }
 
-    /**
-     * Starts the permission check and Geofence process only if the Geofence associated with the
-     * current hint isn't yet active.
-     */
-    fun checkPermissionsAndStartGeofencing(context: Context, onError: () -> Unit) {
-        if (foregroundAndBackgroundLocationPermissionApproved(context)) {
-            checkDeviceLocationSettingsAndStartGeofence(activity = context as Activity, onError = onError)
-        } else {
-            requestForegroundAndBackgroundLocationPermissions(context)
-        }
+
+    override fun doWork(): Result {
+        init(context)
+        checkDeviceLocationSettingsAndStartGeofence(context = context,
+            onError = {
+                val notificationManager = ContextCompat.getSystemService(
+                    context,
+                    NotificationManager::class.java
+                ) as NotificationManager
+
+                notificationManager.sendErrorMessage(
+                    context
+                )
+            })
+        return Result.success()
     }
+
 
     /*
     *  Uses the Location Client to check the current state of location settings, and gives the user
@@ -49,15 +54,16 @@ object GeofenceManager {
     */
     fun checkDeviceLocationSettingsAndStartGeofence(
         resolve: Boolean = true,
-        activity: Activity,
+        context: Context,
         onError: () -> Unit
     ) {
+        removeGeofences(context)
         val locationRequest = LocationRequest.create().apply {
             priority = LocationRequest.PRIORITY_LOW_POWER
         }
         val builder = LocationSettingsRequest.Builder().addLocationRequest(locationRequest)
 
-        val settingsClient = LocationServices.getSettingsClient(activity)
+        val settingsClient = LocationServices.getSettingsClient(context)
         val locationSettingsResponseTask =
             settingsClient.checkLocationSettings(builder.build())
 
@@ -68,10 +74,13 @@ object GeofenceManager {
                 try {
                     // Show the dialog by calling startResolutionForResult(),
                     // and check the result in onActivityResult().
-                    exception.startResolutionForResult(
-                        activity,
-                        REQUEST_TURN_DEVICE_LOCATION_ON
-                    )
+                    if (context is Activity) {
+                        exception.startResolutionForResult(
+                            context,
+                            REQUEST_TURN_DEVICE_LOCATION_ON
+                        )
+                    }
+
                 } catch (sendEx: IntentSender.SendIntentException) {
                     Log.d(TAG, "Error geting location settings resolution: " + sendEx.message)
                 }
@@ -90,7 +99,7 @@ object GeofenceManager {
         }
         locationSettingsResponseTask.addOnCompleteListener {
             if (it.isSuccessful) {
-                activity?.let { it1 -> addGeofenceForClue(it1) }
+                context.let { it1 -> addGeofenceForClue(it1) }
             }
         }
     }
@@ -106,7 +115,7 @@ object GeofenceManager {
 
         val currentGeofenceDataList = GeofencingConstants.LANDMARK_DATA
 
-        currentGeofenceDataList.forEach { currentGeofenceData->
+        currentGeofenceDataList.forEach { currentGeofenceData ->
             // Build the Geofence Object
             val geofence = Geofence.Builder()
                 // Set the request ID, string to identify the geofence.
@@ -176,9 +185,9 @@ object GeofenceManager {
      * permission.
      */
     private fun removeGeofences(context: Context) {
-        if (!foregroundAndBackgroundLocationPermissionApproved(context)) {
-            return
-        }
+        /* if (!foregroundAndBackgroundLocationPermissionApproved(context)) {
+             return
+         }*/
         geofencingClient.removeGeofences(geofencePendingIntent)?.run {
             addOnSuccessListener {
                 // Geofences removed
@@ -193,62 +202,6 @@ object GeofenceManager {
         }
     }
 
-    /*
-    *  Determines whether the app has the appropriate permissions across Android 10+ and all other
-    *  Android versions.
-    */
-    @TargetApi(29)
-    private fun foregroundAndBackgroundLocationPermissionApproved(context: Context): Boolean {
-        val foregroundLocationApproved = (
-                PackageManager.PERMISSION_GRANTED ==
-                        ActivityCompat.checkSelfPermission(
-                            context,
-                            Manifest.permission.ACCESS_FINE_LOCATION
-                        ))
-        val backgroundPermissionApproved =
-            if (runningQOrLater) {
-                PackageManager.PERMISSION_GRANTED ==
-                        ActivityCompat.checkSelfPermission(
-                            context, Manifest.permission.ACCESS_BACKGROUND_LOCATION
-                        )
-            } else {
-                true
-            }
-        return foregroundLocationApproved && backgroundPermissionApproved
-    }
-
-
-    /*
- *  Requests ACCESS_FINE_LOCATION and (on Android 10+ (Q) ACCESS_BACKGROUND_LOCATION.
- */
-    @TargetApi(29)
-    private fun requestForegroundAndBackgroundLocationPermissions(context: Context) {
-        if (foregroundAndBackgroundLocationPermissionApproved(context))
-            return
-
-        // Else request the permission
-        // this provides the result[LOCATION_PERMISSION_INDEX]
-        var permissionsArray = arrayOf(Manifest.permission.ACCESS_FINE_LOCATION)
-
-        val resultCode = when {
-            runningQOrLater -> {
-                // this provides the result[BACKGROUND_LOCATION_PERMISSION_INDEX]
-                permissionsArray += Manifest.permission.ACCESS_BACKGROUND_LOCATION
-                REQUEST_FOREGROUND_AND_BACKGROUND_PERMISSION_RESULT_CODE
-            }
-            else -> REQUEST_FOREGROUND_ONLY_PERMISSIONS_REQUEST_CODE
-        }
-
-        Log.d(TAG, "Request foreground only location permission")
-        if (context is Activity) {
-            ActivityCompat.requestPermissions(
-                context,
-                permissionsArray,
-                resultCode
-            )
-        }
-    }
-
 
     // A PendingIntent for the Broadcast Receiver that handles geofence transitions.
     private fun getGeofencePendingIntent(context: Context): PendingIntent {
@@ -260,31 +213,10 @@ object GeofenceManager {
     }
 
 
-    fun processPermissionRequest(
-        requestCode: Int,
-        permissions: Array<String>,
-        grantResults: IntArray,
-        onDenied: () -> Unit,
-        onGranted: ()-> Unit
-    ) {
-        if (
-            grantResults.isEmpty() ||
-            grantResults[LOCATION_PERMISSION_INDEX] == PackageManager.PERMISSION_DENIED ||
-            (requestCode == REQUEST_FOREGROUND_AND_BACKGROUND_PERMISSION_RESULT_CODE &&
-                    grantResults[BACKGROUND_LOCATION_PERMISSION_INDEX] ==
-                    PackageManager.PERMISSION_DENIED)
-        ) {
-            onDenied()
-        } else {
-            onGranted()
-        }
-    }
-
 }
 
-
-private const val REQUEST_FOREGROUND_AND_BACKGROUND_PERMISSION_RESULT_CODE = 33
-private const val REQUEST_FOREGROUND_ONLY_PERMISSIONS_REQUEST_CODE = 34
-private const val REQUEST_TURN_DEVICE_LOCATION_ON = 29
-private const val LOCATION_PERMISSION_INDEX = 0
-private const val BACKGROUND_LOCATION_PERMISSION_INDEX = 1
+const val REQUEST_FOREGROUND_AND_BACKGROUND_PERMISSION_RESULT_CODE = 33
+const val REQUEST_FOREGROUND_ONLY_PERMISSIONS_REQUEST_CODE = 34
+const val REQUEST_TURN_DEVICE_LOCATION_ON = 29
+const val LOCATION_PERMISSION_INDEX = 0
+const val BACKGROUND_LOCATION_PERMISSION_INDEX = 1

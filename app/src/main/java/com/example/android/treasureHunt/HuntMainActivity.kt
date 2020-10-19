@@ -24,6 +24,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.databinding.DataBindingUtil
 import androidx.lifecycle.SavedStateViewModelFactory
 import androidx.lifecycle.ViewModelProviders
+import androidx.work.WorkManager
 import com.example.android.treasureHunt.databinding.ActivityHuntMainBinding
 import com.google.android.material.snackbar.Snackbar
 
@@ -43,6 +44,8 @@ class HuntMainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityHuntMainBinding
     private lateinit var viewModel: GeofenceViewModel
+
+    private val workManager = WorkManager.getInstance(application)
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -72,7 +75,7 @@ class HuntMainActivity : AppCompatActivity() {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == REQUEST_TURN_DEVICE_LOCATION_ON) {
             // We don't rely on the result code, but just check the location setting again
-            viewModel.checkDeviceLocationSettingsAndStartGeofence(false, this, onError)
+            viewModel.checkDeviceLocationSettingsAndStartGeofence(workManager)
         }
     }
 
@@ -93,7 +96,7 @@ class HuntMainActivity : AppCompatActivity() {
     }
 
     private fun checkPermissionsAndStartGeofencing() {
-        viewModel.checkPermissionsAndStartGeofencing(context = this, onError = onError)
+        viewModel.checkPermissionsAndStartGeofencing(context = this, workManager = workManager)
     }
 
     private val onError: () -> Unit = {
@@ -101,9 +104,7 @@ class HuntMainActivity : AppCompatActivity() {
                 binding.activityMapsMain,
                 R.string.location_required_error, Snackbar.LENGTH_INDEFINITE
         ).setAction(android.R.string.ok) {
-            viewModel.checkDeviceLocationSettingsAndStartGeofence(context = HuntMainActivity@ this, onError = {
-
-            })
+            viewModel.checkDeviceLocationSettingsAndStartGeofence(workManager)
         }.show()
     }
 
@@ -132,7 +133,7 @@ class HuntMainActivity : AppCompatActivity() {
                         })
                     }.show()
         }, {
-            viewModel.checkDeviceLocationSettingsAndStartGeofence(false, this, onError)
+            viewModel.checkDeviceLocationSettingsAndStartGeofence(workManager)
         })
     }
 
@@ -142,10 +143,3 @@ class HuntMainActivity : AppCompatActivity() {
                 "HuntMainActivity.treasureHunt.action.ACTION_GEOFENCE_EVENT"
     }
 }
-
-private const val REQUEST_FOREGROUND_AND_BACKGROUND_PERMISSION_RESULT_CODE = 33
-private const val REQUEST_FOREGROUND_ONLY_PERMISSIONS_REQUEST_CODE = 34
-private const val REQUEST_TURN_DEVICE_LOCATION_ON = 29
-private const val TAG = "HuntMainActivity"
-private const val LOCATION_PERMISSION_INDEX = 0
-private const val BACKGROUND_LOCATION_PERMISSION_INDEX = 1

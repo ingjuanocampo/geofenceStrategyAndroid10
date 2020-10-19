@@ -89,7 +89,41 @@ fun NotificationManager.sendGeofenceEnteredNotification(context: Context, foundI
     notify(NOTIFICATION_ID, builder.build())
 }
 
+
+
+fun NotificationManager.sendErrorMessage(context: Context) {
+    val contentIntent = Intent(context, HuntMainActivity::class.java)
+    contentIntent.putExtra(GeofencingConstants.EXTRA_GEOFENCE_NOT_LOCATION_ACCESS, true)
+    val contentPendingIntent = PendingIntent.getActivity(
+        context,
+        NOTIFICATION_ID_ERROR,
+        contentIntent,
+        PendingIntent.FLAG_UPDATE_CURRENT
+    )
+    val mapImage = BitmapFactory.decodeResource(
+        context.resources,
+        R.drawable.map_small
+    )
+    val bigPicStyle = NotificationCompat.BigPictureStyle()
+        .bigPicture(mapImage)
+        .bigLargeIcon(null)
+
+    // We use the name resource ID from the LANDMARK_DATA along with content_text to create
+    // a custom message when a Geofence triggers.
+    val builder = NotificationCompat.Builder(context, CHANNEL_ID)
+        .setContentTitle(context.getString(R.string.app_name))
+        .setContentText("NO background location permission granted")
+        .setPriority(NotificationCompat.PRIORITY_HIGH)
+        .setContentIntent(contentPendingIntent)
+        .setSmallIcon(R.drawable.map_small)
+        .setStyle(bigPicStyle)
+        .setLargeIcon(mapImage)
+
+    notify(NOTIFICATION_ID, builder.build())
+}
+
 private const val NOTIFICATION_ID = 33
+private const val NOTIFICATION_ID_ERROR = 34
 private const val CHANNEL_ID = "GeofenceChannel"
 
 
