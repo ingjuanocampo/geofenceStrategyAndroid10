@@ -16,6 +16,9 @@
 
 package com.example.android.treasureHunt
 
+import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.Transformations
@@ -32,7 +35,9 @@ import androidx.lifecycle.ViewModel
  * the Home action will cause the state to be saved, even if the game is terminated by Android in
  * the background.
  */
+
 class GeofenceViewModel(state: SavedStateHandle) : ViewModel() {
+
     private val _geofenceIndex = state.getLiveData(GEOFENCE_INDEX_KEY, -1)
     private val _hintIndex = state.getLiveData(HINT_INDEX_KEY, 0)
     val geofenceIndex: LiveData<Int>
@@ -64,7 +69,37 @@ class GeofenceViewModel(state: SavedStateHandle) : ViewModel() {
     }
 
     fun geofenceIsActive() =_geofenceIndex.value == _hintIndex.value
+
     fun nextGeofenceIndex() = _hintIndex.value ?: 0
+
+    fun init(activity: Context) {
+        GeofenceManager.init(context = activity)
+    }
+
+    fun checkDeviceLocationSettingsAndStartGeofence(
+        resolve: Boolean = true,
+        context: Context,
+        onError: () -> Unit
+    ) {
+        GeofenceManager.checkDeviceLocationSettingsAndStartGeofence(resolve, context as Activity, onError)
+    }
+
+    fun checkPermissionsAndStartGeofencing(context: HuntMainActivity, onError: () -> Unit) {
+        if (geofenceIsActive()) return
+        GeofenceManager.checkPermissionsAndStartGeofencing(context, onError)
+    }
+
+    fun processPermissionRequest(
+        requestCode: Int,
+        permissions: Array<String>,
+        grantResults: IntArray,
+        function: () -> Unit,
+        onGranted: () -> Unit
+    ) {
+        GeofenceManager.processPermissionRequest(requestCode, permissions, grantResults, function, onGranted)
+    }
+
+
 }
 
 private const val HINT_INDEX_KEY = "hintIndex"
