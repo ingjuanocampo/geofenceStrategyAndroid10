@@ -7,6 +7,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.IntentSender
+import android.os.Looper
 import android.util.Log
 import android.widget.Toast
 import androidx.core.content.ContextCompat
@@ -14,12 +15,12 @@ import androidx.work.Worker
 import androidx.work.WorkerParameters
 import com.google.android.gms.common.api.ResolvableApiException
 import com.google.android.gms.location.*
+import java.util.concurrent.TimeUnit
 
 
 private const val TAG = "GeofenceManager"
 
-class GeofenceManager(private val context: Context, params: WorkerParameters) :
-    Worker(context, params) {
+object GeofenceManager {
 
 
     private lateinit var geofencePendingIntent: PendingIntent
@@ -28,11 +29,11 @@ class GeofenceManager(private val context: Context, params: WorkerParameters) :
     fun init(context: Context) {
         geofencingClient = LocationServices.getGeofencingClient(context)
         geofencePendingIntent = getGeofencePendingIntent(context)
+
     }
 
 
-    override fun doWork(): Result {
-        init(context)
+    fun doWork(context: Context) {
         checkDeviceLocationSettingsAndStartGeofence(context = context,
             onError = {
                 val notificationManager = ContextCompat.getSystemService(
@@ -44,7 +45,6 @@ class GeofenceManager(private val context: Context, params: WorkerParameters) :
                     context
                 )
             })
-        return Result.success()
     }
 
 
@@ -52,12 +52,16 @@ class GeofenceManager(private val context: Context, params: WorkerParameters) :
     *  Uses the Location Client to check the current state of location settings, and gives the user
     *  the opportunity to turn on location services within our app.
     */
+    @SuppressLint("MissingPermission")
     fun checkDeviceLocationSettingsAndStartGeofence(
         resolve: Boolean = true,
         context: Context,
         onError: () -> Unit
     ) {
         removeGeofences(context)
+        val myLocationManager = MyLocationManager.getInstance(context)
+        myLocationManager.stopLocationUpdates()
+        myLocationManager.startLocationUpdates()
         val locationRequest = LocationRequest.create().apply {
             priority = LocationRequest.PRIORITY_LOW_POWER
         }
@@ -104,6 +108,27 @@ class GeofenceManager(private val context: Context, params: WorkerParameters) :
         }
     }
 
+    private fun locationUpdatePendingIntent(context: Context): PendingIntent {
+        val intent = Intent(context, LocationUpdatesBroadcastReceiver::class.java)
+        intent.action = LocationUpdatesBroadcastReceiver.ACTION_PROCESS_UPDATES
+        return PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
+    }
+
+    val locationCallback = object : LocationCallback() {
+        override fun onLocationResult(locationResult: LocationResult?) {
+            super.onLocationResult(locationResult)
+
+            if (locationResult?.lastLocation != null) {
+
+                Log.d(TAG, "Location information is available.")
+
+            } else {
+                Log.d(TAG, "Location information isn't available.")
+            }
+        }
+    }
+
+
     /*
     * Adds a Geofence for the current clue if needed, and removes any existing Geofence. This
     * method should be called after the user has granted the location permission.  If there are
@@ -132,7 +157,7 @@ class GeofenceManager(private val context: Context, params: WorkerParameters) :
                 // Set the transition types of interest. Alerts are only generated for these
                 // transition. We track entry and exit transitions in this sample.
                 .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER)
-                .build()
+            .build()
 
             // Build the geofence request
             val geofencingRequest = GeofencingRequest.Builder()

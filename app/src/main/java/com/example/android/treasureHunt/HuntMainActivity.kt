@@ -75,7 +75,7 @@ class HuntMainActivity : AppCompatActivity() {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == REQUEST_TURN_DEVICE_LOCATION_ON) {
             // We don't rely on the result code, but just check the location setting again
-            viewModel.checkDeviceLocationSettingsAndStartGeofence(workManager)
+            viewModel.checkDeviceLocationSettingsAndStartGeofence(this, workManager)
         }
     }
 
@@ -104,7 +104,7 @@ class HuntMainActivity : AppCompatActivity() {
                 binding.activityMapsMain,
                 R.string.location_required_error, Snackbar.LENGTH_INDEFINITE
         ).setAction(android.R.string.ok) {
-            viewModel.checkDeviceLocationSettingsAndStartGeofence(workManager)
+            viewModel.checkDeviceLocationSettingsAndStartGeofence(this, workManager)
         }.show()
     }
 
@@ -133,7 +133,7 @@ class HuntMainActivity : AppCompatActivity() {
                         })
                     }.show()
         }, {
-            viewModel.checkDeviceLocationSettingsAndStartGeofence(workManager)
+            viewModel.checkDeviceLocationSettingsAndStartGeofence(this, workManager)
         })
     }
 

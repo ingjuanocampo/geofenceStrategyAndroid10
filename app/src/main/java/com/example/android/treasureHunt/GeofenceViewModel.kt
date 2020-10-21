@@ -21,7 +21,6 @@ import android.annotation.TargetApi
 import android.app.Activity
 import android.content.Context
 import android.content.pm.PackageManager
-import android.util.Log
 import androidx.core.app.ActivityCompat
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.SavedStateHandle
@@ -46,9 +45,12 @@ private const val TAG = "GeofenceViewModel"
 
 class GeofenceViewModel(state: SavedStateHandle) : ViewModel() {
 
+    private lateinit var locationWorkRequest: PeriodicWorkRequest
     private lateinit var geofenceRequest: PeriodicWorkRequest
     private val runningQOrLater =
         android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q
+
+
 
     private val _geofenceIndex = state.getLiveData(GEOFENCE_INDEX_KEY, -1)
     private val _hintIndex = state.getLiveData(HINT_INDEX_KEY, 0)
@@ -85,26 +87,38 @@ class GeofenceViewModel(state: SavedStateHandle) : ViewModel() {
     fun nextGeofenceIndex() = _hintIndex.value ?: 0
 
     fun init(activity: Context) {
-        geofenceRequest =
+        GeofenceManager.init(activity)
+       /* geofenceRequest =
             PeriodicWorkRequestBuilder<GeofenceManager>(10, TimeUnit.MINUTES)
                 .setConstraints(Constraints.Builder()
                     .setRequiresBatteryNotLow(true)
                     .setRequiredNetworkType(NetworkType.CONNECTED)
                     .build())
-                .build()
+                .build()*/
+        /*locationWorkRequest =
+            PeriodicWorkRequestBuilder<MyLocationManager>(10, TimeUnit.MINUTES)
+                .setConstraints(Constraints.Builder()
+                    .setRequiresBatteryNotLow(true)
+                    .setRequiredNetworkType(NetworkType.CONNECTED)
+                    .build())
+                .build()*/
+
     }
 
     fun checkDeviceLocationSettingsAndStartGeofence(
-        workManager: WorkManager
+        context: Context
+    , workManager: WorkManager
     ) {
-        workManager.enqueue(geofenceRequest)
+        GeofenceManager.doWork(context)
+        //workManager.enqueue(locationWorkRequest)
+
         //GeofenceManager.checkDeviceLocationSettingsAndStartGeofence(resolve, context as Activity, onError)
     }
 
     fun checkPermissionsAndStartGeofencing(context: Context, workManager: WorkManager) {
         if (geofenceIsActive()) return
         if (foregroundAndBackgroundLocationPermissionApproved(context)) {
-            checkDeviceLocationSettingsAndStartGeofence(workManager = workManager)
+            checkDeviceLocationSettingsAndStartGeofence(context, workManager)
         } else {
             requestForegroundAndBackgroundLocationPermissions(context)
         }
@@ -131,7 +145,6 @@ class GeofenceViewModel(state: SavedStateHandle) : ViewModel() {
             else -> REQUEST_FOREGROUND_ONLY_PERMISSIONS_REQUEST_CODE
         }
 
-        Log.d(TAG, "Request foreground only location permission")
         if (context is Activity) {
             ActivityCompat.requestPermissions(
                 context,

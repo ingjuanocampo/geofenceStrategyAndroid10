@@ -25,6 +25,8 @@ import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.os.Build
 import androidx.core.app.NotificationCompat
+import java.util.*
+import kotlin.random.Random
 
 /*
  * We need to create a NotificationChannel associated with our CHANNEL_ID before sending a
@@ -60,9 +62,10 @@ fun createChannel(context: Context) {
 fun NotificationManager.sendGeofenceEnteredNotification(context: Context, foundIndex: Int) {
     val contentIntent = Intent(context, HuntMainActivity::class.java)
     contentIntent.putExtra(GeofencingConstants.EXTRA_GEOFENCE_INDEX, foundIndex)
+    val notificationId = NOTIFICATION_ID + UUID.randomUUID().hashCode()
     val contentPendingIntent = PendingIntent.getActivity(
         context,
-        NOTIFICATION_ID,
+        notificationId,
         contentIntent,
         PendingIntent.FLAG_UPDATE_CURRENT
     )
@@ -86,7 +89,7 @@ fun NotificationManager.sendGeofenceEnteredNotification(context: Context, foundI
         .setStyle(bigPicStyle)
         .setLargeIcon(mapImage)
 
-    notify(NOTIFICATION_ID, builder.build())
+    notify(notificationId, builder.build())
 }
 
 
