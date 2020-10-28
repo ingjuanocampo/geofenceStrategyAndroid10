@@ -48,7 +48,8 @@
     <string name="golden_gate_bridge_location">You are in home</string>
     <string name="ferry_building_location">Merque paisa</string>
     <string name="onix">Onix !</string>
-    <string name="union_square_location">Luis Amigo</string>
+    <string name="union_square_location">Union Square</string>
+    <string name="luis_amigo_location">Luis Amigo</string>
 
     <!-- Error strings -->
     <string name="geofence_not_available">Geofence service is not available now</string>
@@ -76,5 +77,9 @@
     <string name="automontana">Automontana</string>
     <string name="body_tech">Body Tech Colomba</string>
     <string name="luis_amigo">Luis Amigo</string>
+    <string name="exito_robledo">exito robledo</string>
+    <string name="esquina_80">esquina 80</string>
+    <string name="aquarela">aquarela</string>
+    <string name="claudia">claudia</string>
 
 </resources>

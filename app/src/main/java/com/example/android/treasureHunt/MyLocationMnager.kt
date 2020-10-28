@@ -35,8 +35,7 @@ class MyLocationManager private constructor(private val context: Context) {
         get() = _receivingLocationUpdates
 
     // The Fused Location Provider provides access to location APIs.
-    private val fusedLocationClient: FusedLocationProviderClient =
-        LocationServices.getFusedLocationProviderClient(context)
+    private val fusedLocationClient: FusedLocationProviderClient by lazy { LocationServices.getFusedLocationProviderClient(context) }
 
     // Stores parameters for requests to the FusedLocationProviderApi.
     private val locationRequest: LocationRequest = LocationRequest().apply {

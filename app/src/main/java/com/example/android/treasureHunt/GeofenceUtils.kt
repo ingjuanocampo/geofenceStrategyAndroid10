@@ -58,45 +58,84 @@ internal object GeofencingConstants {
             "home",
             R.string.golden_gate_bridge_hint,
             R.string.golden_gate_bridge_location,
-            LatLng(6.269567,-75.591526)),
+            LatLng(6.269567, -75.591526)
+        ),
 
         LandmarkDataObject(
             "merquepaisa",
             R.string.ferry_building_hint,
             R.string.ferry_building_location,
-            LatLng(6.262945, -75.588908)),
+            LatLng(6.262945, -75.588908)
+        ),
 
         LandmarkDataObject(
             "onix",
             R.string.onix,
             R.string.onix,
-            LatLng(6.270847, -75.590340)),
+            LatLng(6.270847, -75.590340)
+        ),
 
         LandmarkDataObject(
             "luisamigo",
             R.string.luis_amigo,
             R.string.luis_amigo,
-            LatLng(6.259108, -75.584084)),
+            LatLng(6.259108, -75.584084)
+        ),
 
 
         LandmarkDataObject(
-           "union_square",
+            "union_square",
             R.string.union_square_hint,
             R.string.union_square_location,
-            LatLng(37.788348, -122.407112)),
+            LatLng(37.788348, -122.407112)
+        ),
 
-                LandmarkDataObject(
-                "automontana",
-        R.string.union_square_hint,
-        R.string.automontana,
-        LatLng(6.227958, -75.570317)),
+        LandmarkDataObject(
+            "automontana",
+            R.string.union_square_hint,
+            R.string.automontana,
+            LatLng(6.227958, -75.570317)
+        ),
 
 
         LandmarkDataObject(
             "bodytech",
             R.string.body_tech,
             R.string.body_tech,
-            LatLng(6.256802, -75.582449))
+            LatLng(6.256802, -75.582449)
+        ),
+
+        LandmarkDataObject(
+            "exito_robledo",
+            R.string.exito_robledo,
+            R.string.exito_robledo,
+            LatLng(6.273069, -75.593398)
+        ),
+
+
+        LandmarkDataObject(
+            "esquina_80",
+            R.string.esquina_80,
+            R.string.esquina_80,
+            LatLng(6.268330, -75.595775)
+        ),
+
+
+        LandmarkDataObject(
+            "aquarela",
+            R.string.aquarela,
+            R.string.aquarela,
+            LatLng(6.268190, -75.597075)
+        ),
+
+        LandmarkDataObject(
+            "claudia",
+            R.string.claudia,
+            R.string.claudia,
+            LatLng(6.267455, -75.601535)
+        )
+
+
     )
 
     val NUM_LANDMARKS = LANDMARK_DATA.size

@@ -23,7 +23,6 @@ import android.content.Intent
 import android.util.Log
 import androidx.core.content.ContextCompat
 import com.example.android.treasureHunt.HuntMainActivity.Companion.ACTION_GEOFENCE_EVENT
-import com.google.android.gms.location.Geofence
 import com.google.android.gms.location.GeofencingEvent
 
 /*
@@ -46,7 +45,6 @@ class GeofenceBroadcastReceiver : BroadcastReceiver() {
                 return
             }
 
-            if (geofencingEvent.geofenceTransition == Geofence.GEOFENCE_TRANSITION_ENTER) {
                 Log.v(TAG, context.getString(R.string.geofence_entered))
 
                 val fenceId = when {
@@ -75,9 +73,9 @@ class GeofenceBroadcastReceiver : BroadcastReceiver() {
                 ) as NotificationManager
 
                 notificationManager.sendGeofenceEnteredNotification(
-                    context, foundIndex
+                    context, foundIndex, geofencingEvent.geofenceTransition
                 )
-            }
+
         }
     }
 }

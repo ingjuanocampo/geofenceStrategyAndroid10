@@ -4,32 +4,27 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.NotificationManager
 import android.app.PendingIntent
-import android.content.Context
-import android.content.Intent
-import android.content.IntentSender
-import android.os.Looper
+import android.content.*
+import android.os.IBinder
 import android.util.Log
 import android.widget.Toast
 import androidx.core.content.ContextCompat
-import androidx.work.Worker
-import androidx.work.WorkerParameters
+import com.example.android.treasureHunt.service.LocationForegroundService
 import com.google.android.gms.common.api.ResolvableApiException
 import com.google.android.gms.location.*
-import java.util.concurrent.TimeUnit
 
 
 private const val TAG = "GeofenceManager"
 
 object GeofenceManager {
 
-
+    private var locationService: LocationForegroundService? = null
     private lateinit var geofencePendingIntent: PendingIntent
     private lateinit var geofencingClient: GeofencingClient
 
     fun init(context: Context) {
         geofencingClient = LocationServices.getGeofencingClient(context)
         geofencePendingIntent = getGeofencePendingIntent(context)
-
     }
 
 
@@ -59,9 +54,22 @@ object GeofenceManager {
         onError: () -> Unit
     ) {
         removeGeofences(context)
-        val myLocationManager = MyLocationManager.getInstance(context)
-        myLocationManager.stopLocationUpdates()
-        myLocationManager.startLocationUpdates()
+
+        if (locationService == null) {
+            context.bindService(Intent(context, LocationForegroundService::class.java),
+                object: ServiceConnection {
+                    override fun onServiceDisconnected(name: ComponentName?) {
+                        this@GeofenceManager.locationService = null
+                    }
+
+                    override fun onServiceConnected(name: ComponentName?, serviceBinder: IBinder?) {
+                        serviceBinder as LocationForegroundService.LocalBinder
+                        this@GeofenceManager.locationService = serviceBinder.service
+                        locationService?.startLocationUpdates()
+                    }
+                }, Context.BIND_AUTO_CREATE)
+        }
+
         val locationRequest = LocationRequest.create().apply {
             priority = LocationRequest.PRIORITY_LOW_POWER
         }
@@ -153,10 +161,12 @@ object GeofenceManager {
                 )
                 // Set the expiration duration of the geofence. This geofence gets
                 // automatically removed after this period of time.
-                .setExpirationDuration(GeofencingConstants.GEOFENCE_EXPIRATION_IN_MILLISECONDS)
+                .setExpirationDuration(Geofence.NEVER_EXPIRE)
+
+                .setLoiteringDelay(1000)
                 // Set the transition types of interest. Alerts are only generated for these
                 // transition. We track entry and exit transitions in this sample.
-                .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER)
+                .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER or Geofence.GEOFENCE_TRANSITION_EXIT or Geofence.GEOFENCE_TRANSITION_DWELL)
             .build()
 
             // Build the geofence request
