@@ -7,16 +7,17 @@ import android.content.Intent
 import android.os.Binder
 import android.os.Build
 import android.os.IBinder
+import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import androidx.lifecycle.*
 import com.example.android.treasureHunt.HuntMainActivity
-import com.example.android.treasureHunt.MyLocationManager
+import com.example.android.treasureHunt.DeviceLocationManager
 import com.example.android.treasureHunt.R
 import com.example.android.treasureHunt.createChannel
 
 class LocationForegroundService: Service(), LifecycleObserver {
 
-    val myLocationManager = MyLocationManager.getInstance(this)
+    val deviceLocationManager = DeviceLocationManager.getInstance(this)
     private val mBinder: IBinder = LocalBinder(this)
 
 
@@ -35,9 +36,12 @@ class LocationForegroundService: Service(), LifecycleObserver {
 
     fun startLocationUpdates() {
         startService(Intent(this, LocationForegroundService::class.java))
-        myLocationManager.stopLocationUpdates()
-        myLocationManager.startLocationUpdates()
+        deviceLocationManager.stopLocationUpdates()
+        deviceLocationManager.startLocationUpdates()
         ProcessLifecycleOwner.get().lifecycle.addObserver(this)
+        deviceLocationManager.locationUpdates.observeForever {
+            Toast.makeText(this, "Location found: ${it.latitude}, ${it.longitude}", Toast.LENGTH_SHORT).show()
+        }
     }
 
     @OnLifecycleEvent(Lifecycle.Event.ON_RESUME)
@@ -61,7 +65,7 @@ class LocationForegroundService: Service(), LifecycleObserver {
 
     override fun onDestroy() {
         super.onDestroy()
-        myLocationManager.stopLocationUpdates()
+        deviceLocationManager.stopLocationUpdates()
     }
 
     /**

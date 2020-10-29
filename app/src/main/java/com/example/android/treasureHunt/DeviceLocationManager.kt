@@ -2,21 +2,16 @@ package com.example.android.treasureHunt
 
 
 import android.Manifest
-import android.app.PendingIntent
 import android.content.Context
-import android.content.Intent
 import android.content.pm.PackageManager
+import android.location.Location
+import android.os.Looper
 import android.util.Log
 import androidx.annotation.MainThread
 import androidx.core.app.ActivityCompat
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import androidx.work.WorkManager
-import androidx.work.Worker
-import androidx.work.WorkerParameters
-import com.google.android.gms.location.FusedLocationProviderClient
-import com.google.android.gms.location.LocationRequest
-import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.*
 import java.util.concurrent.TimeUnit
 
 private const val TAG = "MyLocationManager"
@@ -24,15 +19,19 @@ private const val TAG = "MyLocationManager"
 /**
  * Manages all location related tasks for the app.
  */
-class MyLocationManager private constructor(private val context: Context) {
+class DeviceLocationManager private constructor(private val context: Context) {
 
     private val _receivingLocationUpdates: MutableLiveData<Boolean> = MutableLiveData<Boolean>(false)
+
+    private val _locationLiveData = MutableLiveData<Location>()
 
     /**
      * Status of location updates, i.e., whether the app is actively subscribed to location changes.
      */
     val receivingLocationUpdates: LiveData<Boolean>
         get() = _receivingLocationUpdates
+
+    val locationUpdates: LiveData<Location> get() = _locationLiveData
 
     // The Fused Location Provider provides access to location APIs.
     private val fusedLocationClient: FusedLocationProviderClient by lazy { LocationServices.getFusedLocationProviderClient(context) }
@@ -66,10 +65,24 @@ class MyLocationManager private constructor(private val context: Context) {
      * Note: We use a BroadcastReceiver because on API level 26 and above (Oreo+), Android places
      * limits on Services.
      */
-    private val locationUpdatePendingIntent: PendingIntent by lazy {
+   /* private val locationUpdatePendingIntent: PendingIntent by lazy {
         val intent = Intent(context, LocationUpdatesBroadcastReceiver::class.java)
         intent.action = LocationUpdatesBroadcastReceiver.ACTION_PROCESS_UPDATES
         PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
+    }*/
+
+    val locationReceiver =
+    object : LocationCallback() {
+        override fun onLocationResult(locationResult: LocationResult) {
+            super.onLocationResult(locationResult)
+            publishLocationUpdate(arrayListOf(locationResult.lastLocation))
+        }
+    }
+
+    fun publishLocationUpdate(locations: MutableList<Location>) {
+        locations.forEach {
+            _locationLiveData.postValue(it)
+        }
     }
 
     /**
@@ -89,7 +102,7 @@ class MyLocationManager private constructor(private val context: Context) {
             _receivingLocationUpdates.postValue(true)
             // If the PendingIntent is the same as the last request (which it always is), this
             // request will replace any requestLocationUpdates() called before.
-            fusedLocationClient.requestLocationUpdates(locationRequest, locationUpdatePendingIntent)
+            fusedLocationClient.requestLocationUpdates(locationRequest, locationReceiver, Looper.myLooper())
         } catch (permissionRevoked: SecurityException) {
             _receivingLocationUpdates.postValue(false)
 
@@ -104,17 +117,19 @@ class MyLocationManager private constructor(private val context: Context) {
     fun stopLocationUpdates() {
         Log.d(TAG, "stopLocationUpdates()")
         _receivingLocationUpdates.postValue(false)
-        fusedLocationClient.removeLocationUpdates(locationUpdatePendingIntent)
+        fusedLocationClient.removeLocationUpdates(locationReceiver)
     }
 
     companion object {
-        @Volatile private var INSTANCE: MyLocationManager? = null
+        @Volatile private var INSTANCE: DeviceLocationManager? = null
 
-        fun getInstance(context: Context): MyLocationManager {
+        fun getInstance(context: Context): DeviceLocationManager {
             return INSTANCE ?: synchronized(this) {
-                INSTANCE ?: MyLocationManager(context).also { INSTANCE = it }
+                INSTANCE ?: DeviceLocationManager(context).also { INSTANCE = it }
             }
         }
+
+        fun getInstance(): DeviceLocationManager? = INSTANCE
     }
 
 }

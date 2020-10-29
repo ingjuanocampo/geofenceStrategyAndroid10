@@ -116,27 +116,6 @@ object GeofenceManager {
         }
     }
 
-    private fun locationUpdatePendingIntent(context: Context): PendingIntent {
-        val intent = Intent(context, LocationUpdatesBroadcastReceiver::class.java)
-        intent.action = LocationUpdatesBroadcastReceiver.ACTION_PROCESS_UPDATES
-        return PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
-    }
-
-    val locationCallback = object : LocationCallback() {
-        override fun onLocationResult(locationResult: LocationResult?) {
-            super.onLocationResult(locationResult)
-
-            if (locationResult?.lastLocation != null) {
-
-                Log.d(TAG, "Location information is available.")
-
-            } else {
-                Log.d(TAG, "Location information isn't available.")
-            }
-        }
-    }
-
-
     /*
     * Adds a Geofence for the current clue if needed, and removes any existing Geofence. This
     * method should be called after the user has granted the location permission.  If there are
