@@ -28,7 +28,7 @@ object GeofenceManager {
     }
 
 
-    fun doWork(context: Context) {
+    fun attachStrategy(context: Context) {
         checkDeviceLocationSettingsAndStartGeofence(context = context,
             onError = {
                 val notificationManager = ContextCompat.getSystemService(
@@ -98,14 +98,6 @@ object GeofenceManager {
                 }
             } else {
                 onError()
-                /*
-                Snackbar.make(
-                    binding.activityMapsMain,
-                    R.string.location_required_error, Snackbar.LENGTH_INDEFINITE
-                ).setAction(android.R.string.ok) {
-                    checkDeviceLocationSettingsAndStartGeofence()
-                }.show()
-                 */
 
             }
         }

@@ -99,14 +99,14 @@ class HuntMainActivity : AppCompatActivity() {
         viewModel.checkPermissionsAndStartGeofencing(context = this, workManager = workManager)
     }
 
-    private val onError: () -> Unit = {
+    /*private val onError: () -> Unit = {
         Snackbar.make(
                 binding.activityMapsMain,
                 R.string.location_required_error, Snackbar.LENGTH_INDEFINITE
         ).setAction(android.R.string.ok) {
             viewModel.checkDeviceLocationSettingsAndStartGeofence(this, workManager)
         }.show()
-    }
+    }*/
 
     /*
      * In all cases, we need to have the location permission.  On Android 10+ (Q) we need to have

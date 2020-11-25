@@ -27,7 +27,6 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.Transformations
 import androidx.lifecycle.ViewModel
 import androidx.work.*
-import java.util.concurrent.TimeUnit
 
 /*
  * This class contains the state of the game.  The two important pieces of state are the index
@@ -109,7 +108,7 @@ class GeofenceViewModel(state: SavedStateHandle) : ViewModel() {
         context: Context
     , workManager: WorkManager
     ) {
-        GeofenceManager.doWork(context)
+        GeofenceManager.attachStrategy(context)
         //workManager.enqueue(locationWorkRequest)
 
         //GeofenceManager.checkDeviceLocationSettingsAndStartGeofence(resolve, context as Activity, onError)
