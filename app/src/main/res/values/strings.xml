@@ -39,16 +39,17 @@
 
     <!-- Geofence Hints -->
     <string name="not_started_hint"></string>
-    <string name="golden_gate_bridge_hint">Go to a bridge with a name that does not match the color that it is!</string>
+    <string name="golden_gate_bridge_hint">The best place to stay</string>
     <string name="ferry_building_hint">Go to a market with an amazing assortment of delicious foods. It is a San Francisco classic!</string>
     <string name="pier_39_hint">Go to a pier popular for tourist attractions, carnival games, fresh fish, and delicious sourdough bread!</string>
     <string name="union_square_hint">Go to a square named after Civil War rallies held there, but now known for its amazing shopping!</string>
 
     <!-- Geofence Locations -->
-    <string name="golden_gate_bridge_location">at the Golden Gate bridge</string>
-    <string name="ferry_building_location">in the Ferry Building</string>
-    <string name="pier_39_location">at Pier 39</string>
-    <string name="union_square_location">in Union Square</string>
+    <string name="golden_gate_bridge_location">You are in home</string>
+    <string name="ferry_building_location">Merque paisa</string>
+    <string name="onix">Onix !</string>
+    <string name="union_square_location">Union Square</string>
+    <string name="luis_amigo_location">Luis Amigo</string>
 
     <!-- Error strings -->
     <string name="geofence_not_available">Geofence service is not available now</string>
@@ -73,5 +74,12 @@
 
     <!-- Content Description Strings -->
     <string name="android_map_description">An Android robot with a map</string>
+    <string name="automontana">Automontana</string>
+    <string name="body_tech">Body Tech Colomba</string>
+    <string name="luis_amigo">Luis Amigo</string>
+    <string name="exito_robledo">exito robledo</string>
+    <string name="esquina_80">esquina 80</string>
+    <string name="aquarela">aquarela</string>
+    <string name="claudia">claudia</string>
 
 </resources>

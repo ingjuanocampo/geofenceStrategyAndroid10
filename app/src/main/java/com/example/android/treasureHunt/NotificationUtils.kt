@@ -25,15 +25,21 @@ import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.os.Build
 import androidx.core.app.NotificationCompat
+import com.google.android.gms.location.Geofence
+import java.util.*
 
 /*
  * We need to create a NotificationChannel associated with our CHANNEL_ID before sending a
  * notification.
  */
 fun createChannel(context: Context) {
+    createChannel(context, CHANNEL_ID)
+}
+
+fun createChannel(context: Context, channelId: String = CHANNEL_ID) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
         val notificationChannel = NotificationChannel(
-            CHANNEL_ID,
+            channelId,
             context.getString(R.string.channel_name),
 
             NotificationManager.IMPORTANCE_HIGH
@@ -45,7 +51,8 @@ fun createChannel(context: Context) {
         notificationChannel.enableLights(true)
         notificationChannel.lightColor = Color.RED
         notificationChannel.enableVibration(true)
-        notificationChannel.description = context.getString(R.string.notification_channel_description)
+        notificationChannel.description =
+            context.getString(R.string.notification_channel_description)
 
         val notificationManager = context.getSystemService(NotificationManager::class.java)
         notificationManager.createNotificationChannel(notificationChannel)
@@ -57,12 +64,17 @@ fun createChannel(context: Context) {
  * entered notification.  It sends a custom notification based on the name string associated
  * with the LANDMARK_DATA from GeofencingConstatns in the GeofenceUtils file.
  */
-fun NotificationManager.sendGeofenceEnteredNotification(context: Context, foundIndex: Int) {
+fun NotificationManager.sendGeofenceEnteredNotification(
+    context: Context,
+    foundIndex: Int,
+    geofenceTransition: Int
+) {
     val contentIntent = Intent(context, HuntMainActivity::class.java)
     contentIntent.putExtra(GeofencingConstants.EXTRA_GEOFENCE_INDEX, foundIndex)
+    val notificationId = NOTIFICATION_ID + UUID.randomUUID().hashCode()
     val contentPendingIntent = PendingIntent.getActivity(
         context,
-        NOTIFICATION_ID,
+        notificationId,
         contentIntent,
         PendingIntent.FLAG_UPDATE_CURRENT
     )
@@ -78,8 +90,56 @@ fun NotificationManager.sendGeofenceEnteredNotification(context: Context, foundI
     // a custom message when a Geofence triggers.
     val builder = NotificationCompat.Builder(context, CHANNEL_ID)
         .setContentTitle(context.getString(R.string.app_name))
-        .setContentText(context.getString(R.string.content_text,
-            context.getString(GeofencingConstants.LANDMARK_DATA[foundIndex].name)))
+        .setContentText(
+            context.getString(
+                R.string.content_text,
+                context.getString(GeofencingConstants.LANDMARK_DATA[foundIndex].name) + " " + getReadableTranstition(
+                    geofenceTransition
+                )
+            )
+        )
+        .setPriority(NotificationCompat.PRIORITY_HIGH)
+        .setContentIntent(contentPendingIntent)
+        .setSmallIcon(R.drawable.map_small)
+        .setStyle(bigPicStyle)
+        .setLargeIcon(mapImage)
+
+    notify(notificationId, builder.build())
+}
+
+fun getReadableTranstition(geofenceTransition: Int): String {
+    return when (geofenceTransition) {
+        Geofence.GEOFENCE_TRANSITION_DWELL -> "DWELL"
+        Geofence.GEOFENCE_TRANSITION_EXIT -> "EXIT"
+        Geofence.GEOFENCE_TRANSITION_ENTER -> "ENTER"
+
+        else -> ""
+    }
+}
+
+
+fun NotificationManager.sendErrorMessage(context: Context) {
+    val contentIntent = Intent(context, HuntMainActivity::class.java)
+    contentIntent.putExtra(GeofencingConstants.EXTRA_GEOFENCE_NOT_LOCATION_ACCESS, true)
+    val contentPendingIntent = PendingIntent.getActivity(
+        context,
+        NOTIFICATION_ID_ERROR,
+        contentIntent,
+        PendingIntent.FLAG_UPDATE_CURRENT
+    )
+    val mapImage = BitmapFactory.decodeResource(
+        context.resources,
+        R.drawable.map_small
+    )
+    val bigPicStyle = NotificationCompat.BigPictureStyle()
+        .bigPicture(mapImage)
+        .bigLargeIcon(null)
+
+    // We use the name resource ID from the LANDMARK_DATA along with content_text to create
+    // a custom message when a Geofence triggers.
+    val builder = NotificationCompat.Builder(context, CHANNEL_ID)
+        .setContentTitle(context.getString(R.string.app_name))
+        .setContentText("NO background location permission granted")
         .setPriority(NotificationCompat.PRIORITY_HIGH)
         .setContentIntent(contentPendingIntent)
         .setSmallIcon(R.drawable.map_small)
@@ -90,6 +150,7 @@ fun NotificationManager.sendGeofenceEnteredNotification(context: Context, foundI
 }
 
 private const val NOTIFICATION_ID = 33
+private const val NOTIFICATION_ID_ERROR = 34
 private const val CHANNEL_ID = "GeofenceChannel"
 
 

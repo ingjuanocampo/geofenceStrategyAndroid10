@@ -16,10 +16,17 @@
 
 package com.example.android.treasureHunt
 
+import android.Manifest
+import android.annotation.TargetApi
+import android.app.Activity
+import android.content.Context
+import android.content.pm.PackageManager
+import androidx.core.app.ActivityCompat
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.Transformations
 import androidx.lifecycle.ViewModel
+import androidx.work.*
 
 /*
  * This class contains the state of the game.  The two important pieces of state are the index
@@ -32,7 +39,18 @@ import androidx.lifecycle.ViewModel
  * the Home action will cause the state to be saved, even if the game is terminated by Android in
  * the background.
  */
+
+private const val TAG = "GeofenceViewModel"
+
 class GeofenceViewModel(state: SavedStateHandle) : ViewModel() {
+
+    private lateinit var locationWorkRequest: PeriodicWorkRequest
+    private lateinit var geofenceRequest: PeriodicWorkRequest
+    private val runningQOrLater =
+        android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q
+
+
+
     private val _geofenceIndex = state.getLiveData(GEOFENCE_INDEX_KEY, -1)
     private val _hintIndex = state.getLiveData(HINT_INDEX_KEY, 0)
     val geofenceIndex: LiveData<Int>
@@ -64,7 +82,123 @@ class GeofenceViewModel(state: SavedStateHandle) : ViewModel() {
     }
 
     fun geofenceIsActive() =_geofenceIndex.value == _hintIndex.value
+
     fun nextGeofenceIndex() = _hintIndex.value ?: 0
+
+    fun init(activity: Context) {
+        GeofenceManager.init(activity)
+       /* geofenceRequest =
+            PeriodicWorkRequestBuilder<GeofenceManager>(10, TimeUnit.MINUTES)
+                .setConstraints(Constraints.Builder()
+                    .setRequiresBatteryNotLow(true)
+                    .setRequiredNetworkType(NetworkType.CONNECTED)
+                    .build())
+                .build()*/
+        /*locationWorkRequest =
+            PeriodicWorkRequestBuilder<MyLocationManager>(10, TimeUnit.MINUTES)
+                .setConstraints(Constraints.Builder()
+                    .setRequiresBatteryNotLow(true)
+                    .setRequiredNetworkType(NetworkType.CONNECTED)
+                    .build())
+                .build()*/
+
+    }
+
+    fun checkDeviceLocationSettingsAndStartGeofence(
+        context: Context
+    , workManager: WorkManager
+    ) {
+        GeofenceManager.attachStrategy(context)
+        //workManager.enqueue(locationWorkRequest)
+
+        //GeofenceManager.checkDeviceLocationSettingsAndStartGeofence(resolve, context as Activity, onError)
+    }
+
+    fun checkPermissionsAndStartGeofencing(context: Context, workManager: WorkManager) {
+        if (geofenceIsActive()) return
+        if (foregroundAndBackgroundLocationPermissionApproved(context)) {
+            checkDeviceLocationSettingsAndStartGeofence(context, workManager)
+        } else {
+            requestForegroundAndBackgroundLocationPermissions(context)
+        }
+    }
+
+    /*
+*  Requests ACCESS_FINE_LOCATION and (on Android 10+ (Q) ACCESS_BACKGROUND_LOCATION.
+*/
+    @TargetApi(29)
+    private fun requestForegroundAndBackgroundLocationPermissions(context: Context) {
+        if (foregroundAndBackgroundLocationPermissionApproved(context))
+            return
+
+        // Else request the permission
+        // this provides the result[LOCATION_PERMISSION_INDEX]
+        var permissionsArray = arrayOf(Manifest.permission.ACCESS_FINE_LOCATION)
+
+        val resultCode = when {
+            runningQOrLater -> {
+                // this provides the result[BACKGROUND_LOCATION_PERMISSION_INDEX]
+                permissionsArray += Manifest.permission.ACCESS_BACKGROUND_LOCATION
+                REQUEST_FOREGROUND_AND_BACKGROUND_PERMISSION_RESULT_CODE
+            }
+            else -> REQUEST_FOREGROUND_ONLY_PERMISSIONS_REQUEST_CODE
+        }
+
+        if (context is Activity) {
+            ActivityCompat.requestPermissions(
+                context,
+                permissionsArray,
+                resultCode
+            )
+        }
+    }
+
+    /*
+*  Determines whether the app has the appropriate permissions across Android 10+ and all other
+*  Android versions.
+*/
+    @TargetApi(29)
+    private fun foregroundAndBackgroundLocationPermissionApproved(context: Context): Boolean {
+        val foregroundLocationApproved = (
+                PackageManager.PERMISSION_GRANTED ==
+                        ActivityCompat.checkSelfPermission(
+                            context,
+                            Manifest.permission.ACCESS_FINE_LOCATION
+                        ))
+        val backgroundPermissionApproved =
+            if (runningQOrLater) {
+                PackageManager.PERMISSION_GRANTED ==
+                        ActivityCompat.checkSelfPermission(
+                            context, Manifest.permission.ACCESS_BACKGROUND_LOCATION
+                        )
+            } else {
+                true
+            }
+        return foregroundLocationApproved && backgroundPermissionApproved
+    }
+
+
+    fun processPermissionRequest(
+        requestCode: Int,
+        permissions: Array<String>,
+        grantResults: IntArray,
+        onDenied: () -> Unit,
+        onGranted: () -> Unit
+    ) {
+        if (
+            grantResults.isEmpty() ||
+            grantResults[LOCATION_PERMISSION_INDEX] == PackageManager.PERMISSION_DENIED ||
+            (requestCode == REQUEST_FOREGROUND_AND_BACKGROUND_PERMISSION_RESULT_CODE &&
+                    grantResults[BACKGROUND_LOCATION_PERMISSION_INDEX] ==
+                    PackageManager.PERMISSION_DENIED)
+        ) {
+            onDenied()
+        } else {
+            onGranted()
+        }
+    }
+
+
 }
 
 private const val HINT_INDEX_KEY = "hintIndex"

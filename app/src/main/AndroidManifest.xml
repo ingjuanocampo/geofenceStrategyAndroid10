@@ -20,12 +20,16 @@
     <!--
         The FINE_LOCATION permission is required for geofencing functionality to work.
     -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <!--
         The BACKGROUND_LOCATION permission is required for geofencing functionality to work on Q+
     -->
+    <!--
+        The BACKGROUND_LOCATION permission is required for geofencing functionality to work on Q+
+    -->
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
-
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -44,6 +48,13 @@
             </intent-filter>
         </activity>
         <receiver android:name=".GeofenceBroadcastReceiver"/>
+
+        <!-- Foreground services in Q+ require type. -->
+        <service
+            android:name=".service.LocationForegroundService"
+            android:enabled="true"
+            android:exported="true"
+            android:foregroundServiceType="location" />
     </application>
 
 </manifest>
